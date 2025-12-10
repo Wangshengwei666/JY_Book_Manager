@@ -1,0 +1,586 @@
+/* JY图书管理系统 - 自定义样式 */
+
+/* 基础样式 */
+body {
+    font-family: 'Microsoft YaHei', 'SimHei', Arial, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 浅色主题 - 暖色调 */
+body.light-theme {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 50%, #fd79a8 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: #333;
+}
+
+body.light-theme .container-fluid {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 1rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+/* 深色主题 */
+body.dark-theme {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: #e0e0e0;
+}
+
+body.dark-theme .container-fluid {
+    background: rgba(26, 26, 46, 0.95);
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 1rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+body.dark-theme .card {
+    background-color: #2a2a3e;
+    color: #e0e0e0;
+    border-color: #3a3a4e;
+}
+
+body.dark-theme .table {
+    color: #e0e0e0;
+}
+
+body.dark-theme .table thead th {
+    background-color: #1a1a2e;
+    color: #e0e0e0;
+    border-color: #3a3a4e;
+}
+
+body.dark-theme .table tbody tr {
+    border-color: #3a3a4e;
+}
+
+body.dark-theme .table tbody tr:hover {
+    background-color: #3a3a4e;
+}
+
+body.dark-theme .form-control,
+body.dark-theme .form-select {
+    background-color: #2a2a3e;
+    border-color: #3a3a4e;
+    color: #e0e0e0;
+}
+
+body.dark-theme .form-control:focus,
+body.dark-theme .form-select:focus {
+    background-color: #2a2a3e;
+    border-color: #ff6b9d;
+    color: #e0e0e0;
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 157, 0.25);
+}
+
+body.dark-theme .text-muted {
+    color: #aaa !important;
+}
+
+/* 导航栏 - 暖色调 */
+.custom-navbar {
+    background: linear-gradient(135deg, #ffd89b 0%, #ff9a9e 100%) !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.custom-navbar .navbar-brand,
+.custom-navbar .nav-link {
+    color: #2d3436 !important;
+    font-weight: 500;
+}
+
+.custom-navbar .navbar-brand {
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.custom-navbar .nav-link:hover {
+    color: #636e72 !important;
+    background-color: rgba(255,255,255,0.2);
+    border-radius: 8px;
+}
+
+.custom-navbar .navbar-toggler {
+    border-color: #2d3436;
+}
+
+.custom-navbar .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(45, 52, 54, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* 深色模式下的导航栏 */
+body.dark-theme .custom-navbar {
+    background: linear-gradient(135deg, #2d3436 0%, #636e72 100%) !important;
+}
+
+body.dark-theme .custom-navbar .navbar-brand,
+body.dark-theme .custom-navbar .nav-link {
+    color: #dfe6e9 !important;
+}
+
+body.dark-theme .custom-navbar .nav-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255,255,255,0.1);
+}
+
+/* 卡片样式 */
+.card {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.card:hover {
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border-bottom: none;
+}
+
+/* 图书卡片 */
+.book-card {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.1);
+    position: relative;
+    animation: fadeIn 0.5s ease;
+}
+
+.book-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.2) !important;
+}
+
+.book-card .card-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* 统计卡片 */
+.stat-card {
+    transition: all 0.3s ease;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.stat-card .card-body {
+    padding: 1.5rem;
+}
+
+/* 表格样式 */
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    text-align: center;
+}
+
+.table tbody td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.01);
+}
+
+body.dark-theme .table tbody tr:hover {
+    background-color: #3a3a4e;
+}
+
+/* 按钮样式 */
+.btn {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* 表单样式 */
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.form-control,
+.form-select {
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #ff6b9d;
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 157, 0.25);
+    transform: translateY(-1px);
+}
+
+/* Flash消息样式 */
+#flash-messages {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    z-index: 1050;
+    min-width: 300px;
+    max-width: 500px;
+}
+
+/* Toast通知样式 */
+.toast-container {
+    z-index: 1100;
+}
+
+.toast {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* 空状态样式 */
+.text-center.py-5 i {
+    opacity: 0.5;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.book-item {
+    animation: fadeIn 0.5s ease;
+}
+
+/* 分页样式 */
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+}
+
+.pagination .page-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #ff6b9d;
+    border-color: #ff6b9d;
+}
+
+/* 深色模式下的分页 */
+body.dark-theme .pagination .page-item.active .page-link {
+    background-color: #c44569;
+    border-color: #c44569;
+}
+
+body.dark-theme .pagination .page-link {
+    background-color: #2a2a3e;
+    border-color: #3a3a4e;
+    color: #e0e0e0;
+}
+
+body.dark-theme .pagination .page-link:hover {
+    background-color: #3a3a4e;
+    border-color: #3a3a4e;
+    color: #fff;
+}
+
+/* 暖色调按钮 */
+.btn-primary {
+    background: linear-gradient(135deg, #ff6b9d 0%, #ff9a9e 100%);
+    border: none;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #ff5a8d 0%, #ff8a9e 100%);
+    color: #fff;
+}
+
+.btn-outline-primary {
+    border-color: #ff6b9d;
+    color: #ff6b9d;
+}
+
+.btn-outline-primary:hover {
+    background-color: #ff6b9d;
+    border-color: #ff6b9d;
+    color: #fff;
+}
+
+/* 深色模式下的按钮 */
+body.dark-theme .btn-primary {
+    background: linear-gradient(135deg, #c44569 0%, #d63031 100%);
+    border: none;
+    color: #fff;
+}
+
+body.dark-theme .btn-primary:hover {
+    background: linear-gradient(135deg, #b83a5e 0%, #c52a2a 100%);
+    color: #fff;
+}
+
+body.dark-theme .btn-outline-primary {
+    border-color: #c44569;
+    color: #c44569;
+}
+
+body.dark-theme .btn-outline-primary:hover {
+    background-color: #c44569;
+    border-color: #c44569;
+    color: #fff;
+}
+
+/* 统计卡片暖色调 */
+.stat-card.bg-primary {
+    background: linear-gradient(135deg, #ff6b9d 0%, #ff9a9e 100%) !important;
+}
+
+.stat-card.bg-success {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%) !important;
+}
+
+.stat-card.bg-info {
+    background: linear-gradient(135deg, #a8e6cf 0%, #88d8a3 100%) !important;
+}
+
+.stat-card.bg-warning {
+    background: linear-gradient(135deg, #ffd3a5 0%, #fd9853 100%) !important;
+}
+
+/* 深色模式下的统计卡片 */
+body.dark-theme .stat-card.bg-primary {
+    background: linear-gradient(135deg, #c44569 0%, #d63031 100%) !important;
+}
+
+body.dark-theme .stat-card.bg-success {
+    background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%) !important;
+}
+
+body.dark-theme .stat-card.bg-info {
+    background: linear-gradient(135deg, #00b894 0%, #00a085 100%) !important;
+}
+
+body.dark-theme .stat-card.bg-warning {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%) !important;
+}
+
+/* 加载动画 */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 复选框样式 */
+.form-check-input {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.form-check-input:checked {
+    background-color: #ff6b9d;
+    border-color: #ff6b9d;
+}
+
+/* 深色模式下的复选框 */
+body.dark-theme .form-check-input {
+    background-color: #2a2a3e;
+    border-color: #3a3a4e;
+}
+
+body.dark-theme .form-check-input:checked {
+    background-color: #c44569;
+    border-color: #c44569;
+}
+
+body.dark-theme .form-check-input:focus {
+    border-color: #c44569;
+    box-shadow: 0 0 0 0.2rem rgba(196, 69, 105, 0.25);
+}
+
+/* 图书卡片中的复选框和序号组合 */
+.book-card .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.book-card .form-check-label {
+    margin: 0;
+    cursor: pointer;
+}
+
+.book-card .form-check-label .badge {
+    transition: all 0.3s ease;
+}
+
+.book-card .form-check-input:checked ~ .form-check-label .badge {
+    background-color: #ff6b9d !important;
+    transform: scale(1.1);
+}
+
+/* 徽章样式 */
+.badge {
+    border-radius: 6px;
+    padding: 0.35em 0.65em;
+}
+
+.badge.bg-primary {
+    background-color: #ff6b9d !important;
+}
+
+/* 深色模式下的徽章 */
+body.dark-theme .badge.bg-primary {
+    background-color: #c44569 !important;
+    color: #fff;
+}
+
+body.dark-theme .book-card .form-check-input:checked ~ .form-check-label .badge {
+    background-color: #c44569 !important;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    body.light-theme .container-fluid,
+    body.dark-theme .container-fluid {
+        margin: 0.5rem;
+        padding: 1rem;
+        border-radius: 10px;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+    
+    .stat-card .card-body {
+        padding: 1rem;
+    }
+    
+    .stat-card h2 {
+        font-size: 1.5rem;
+    }
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+body.dark-theme ::-webkit-scrollbar-track {
+    background: #2a2a3e;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* 选择文本颜色 */
+::selection {
+    background-color: #667eea;
+    color: white;
+}
+
+/* 模态框样式 */
+.modal-content {
+    border-radius: 12px;
+    border: none;
+}
+
+body.dark-theme .modal-content {
+    background-color: #2a2a3e;
+    color: #e0e0e0;
+}
+
+body.dark-theme .modal-header {
+    border-bottom-color: #3a3a4e;
+}
+
+body.dark-theme .modal-footer {
+    border-top-color: #3a3a4e;
+}
+
+/* 图表容器 */
+canvas {
+    max-height: 300px;
+}

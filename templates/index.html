@@ -1,0 +1,493 @@
+{% extends "base.html" %}
+
+{% block title %}图书列表 - JY图书管理系统{% endblock %}
+
+{% block content %}
+<!-- 统计仪表板 -->
+<div class="row mb-4" id="statisticsCards">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card text-white bg-primary stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">图书总数</h6>
+                        <h2 class="mb-0" id="totalBooks">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-book" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card text-white bg-success stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">平均价格</h6>
+                        <h2 class="mb-0" id="avgPrice">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-currency-dollar" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card text-white bg-info stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">总借阅次数</h6>
+                        <h2 class="mb-0" id="totalBorrows">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-arrow-repeat" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card text-white bg-warning stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">最受欢迎</h6>
+                        <h6 class="mb-0 mt-2" id="popularBook" style="font-size: 0.9rem;">-</h6>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-star-fill" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 操作栏 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">搜索</label>
+                        <input type="text" class="form-control" id="searchInput" placeholder="搜索图书名称、作者、ISBN...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">排序方式</label>
+                        <select class="form-select" id="sortBy">
+                            <option value="book_id">图书ID</option>
+                            <option value="book_name">图书名称</option>
+                            <option value="book_price">价格</option>
+                            <option value="interview_times">借阅次数</option>
+                            <option value="book_author">作者</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">排序顺序</label>
+                        <select class="form-select" id="sortOrder">
+                            <option value="ASC">升序</option>
+                            <option value="DESC">降序</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">每页显示</label>
+                        <select class="form-select" id="perPage">
+                            <option value="8">8本</option>
+                            <option value="12" selected>12本</option>
+                            <option value="16">16本</option>
+                            <option value="24">24本</option>
+                            <option value="48">48本</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-outline-info" onclick="toggleAdvancedFilter()">
+                                <i class="bi bi-funnel"></i> 高级筛选
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                                <i class="bi bi-x-circle"></i> 清除
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="exportCSV()">
+                                <i class="bi bi-download"></i> 导出
+                            </button>
+                            <button class="btn btn-outline-success" onclick="showImportModal()">
+                                <i class="bi bi-upload"></i> 导入
+                            </button>
+                            <a href="{{ url_for('new_book') }}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> 添加
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <!-- 批量操作栏 -->
+                <div class="row mt-3" id="batchActions" style="display: none;">
+                    <div class="col-12">
+                        <div class="alert alert-info mb-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>已选择 <strong id="selectedCount">0</strong> 本图书</span>
+                                <button class="btn btn-sm btn-danger" onclick="batchDelete()">
+                                    <i class="bi bi-trash"></i> 批量删除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 高级筛选面板 -->
+                <div class="row mt-3" id="advancedFilterPanel" style="display: none;">
+                    <div class="col-12">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0"><i class="bi bi-funnel-fill"></i> 高级筛选</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">价格范围</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="filterPriceMin" placeholder="最低" step="0.01" min="0">
+                                            <span class="input-group-text">-</span>
+                                            <input type="number" class="form-control" id="filterPriceMax" placeholder="最高" step="0.01" min="0">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">借阅次数范围</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="filterBorrowMin" placeholder="最少" min="0">
+                                            <span class="input-group-text">-</span>
+                                            <input type="number" class="form-control" id="filterBorrowMax" placeholder="最多" min="0">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">出版社</label>
+                                        <select class="form-select" id="filterPublisher" multiple>
+                                            <option value="">加载中...</option>
+                                        </select>
+                                        <small class="text-muted">可多选，按住Ctrl/Cmd选择</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">作者</label>
+                                        <select class="form-select" id="filterAuthor" multiple>
+                                            <option value="">加载中...</option>
+                                        </select>
+                                        <small class="text-muted">可多选，按住Ctrl/Cmd选择</small>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label">指定字段筛选</label>
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <select class="form-select" id="filterField">
+                                                    <option value="">选择字段</option>
+                                                    <option value="book_name">图书名称</option>
+                                                    <option value="book_author">作者</option>
+                                                    <option value="book_isbn">ISBN</option>
+                                                    <option value="book_publisher">出版社</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-8">
+                                                <input type="text" class="form-control" id="filterKeyword" placeholder="输入关键词">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-primary" onclick="applyAdvancedFilter()">
+                                                <i class="bi bi-check-circle"></i> 应用筛选
+                                            </button>
+                                            <button class="btn btn-outline-secondary" onclick="resetAdvancedFilter()">
+                                                <i class="bi bi-arrow-counterclockwise"></i> 重置
+                                            </button>
+                                            <button class="btn btn-outline-secondary" onclick="toggleAdvancedFilter()">
+                                                <i class="bi bi-x"></i> 关闭
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 视图切换按钮 -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-book"></i> 图书列表</h2>
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-primary active" id="viewCard" onclick="switchView('card')">
+            <i class="bi bi-grid"></i> 卡片视图
+        </button>
+        <button type="button" class="btn btn-outline-primary" id="viewTable" onclick="switchView('table')">
+            <i class="bi bi-table"></i> 表格视图
+        </button>
+    </div>
+</div>
+
+<!-- 图书卡片视图 -->
+<div id="cardView">
+    <div class="row g-4" id="booksGrid">
+        {% if books %}
+            {% for book in books %}
+            <div class="col-md-4 col-lg-3 book-item" data-book-id="{{ book.book_id }}">
+                <div class="card book-card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input book-checkbox" type="checkbox" 
+                                       value="{{ book.book_id }}" onchange="updateBatchActions()"
+                                       id="checkbox-{{ book.book_id }}">
+                                <label class="form-check-label" for="checkbox-{{ book.book_id }}" style="cursor: pointer;">
+                                    <span class="badge bg-primary">{{ book.book_id }}</span>
+                                </label>
+                            </div>
+                            <h5 class="card-title mb-0 flex-grow-1 ms-2" style="cursor: pointer;" 
+                                onclick="showBookDetail('{{ book.book_id }}')">{{ book.book_name }}</h5>
+                        </div>
+                        <div class="book-info mb-3">
+                            <p class="text-muted mb-2 small">
+                                <i class="bi bi-person"></i> <strong>作者：</strong>{{ book.book_author }}
+                            </p>
+                            <p class="text-muted mb-2 small">
+                                <i class="bi bi-building"></i> <strong>出版社：</strong>{{ book.book_publisher }}
+                            </p>
+                            <p class="text-muted mb-2 small">
+                                <i class="bi bi-upc"></i> <strong>ISBN：</strong>{{ book.book_isbn }}
+                            </p>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+                            <div>
+                                <span class="h5 text-primary mb-0">¥{{ "%.2f"|format(book.book_price) }}</span>
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-eye"></i> 借阅 {{ book.interview_times }} 次
+                                </small>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('edit_book', book_id=book.book_id) }}" 
+                                   class="btn btn-outline-primary" title="编辑">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" 
+                                        class="btn btn-outline-danger"
+                                        onclick="deleteBook('{{ book.book_id }}', '{{ book.book_name }}')"
+                                        title="删除">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                    <p class="text-muted mt-3">暂无图书数据</p>
+                    <a href="{{ url_for('new_book') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> 添加第一本图书
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 图书表格视图 -->
+<div id="tableView" style="display: none;">
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped" id="booksTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th width="40">
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th>图书ID</th>
+                            <th>图书名称</th>
+                            <th>ISBN</th>
+                            <th>作者</th>
+                            <th>出版社</th>
+                            <th>价格</th>
+                            <th>借阅次数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if books %}
+                            {% for book in books %}
+                            <tr class="book-item" data-book-id="{{ book.book_id }}">
+                                <td>
+                                    <input type="checkbox" class="book-checkbox" value="{{ book.book_id }}" 
+                                           onchange="updateBatchActions()">
+                                </td>
+                                <td>{{ book.book_id }}</td>
+                                <td>{{ book.book_name }}</td>
+                                <td>{{ book.book_isbn }}</td>
+                                <td>{{ book.book_author }}</td>
+                                <td>{{ book.book_publisher }}</td>
+                                <td>¥{{ "%.2f"|format(book.book_price) }}</td>
+                                <td>{{ book.interview_times }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('edit_book', book_id=book.book_id) }}" 
+                                           class="btn btn-outline-primary" title="编辑">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-outline-danger"
+                                                onclick="deleteBook('{{ book.book_id }}', '{{ book.book_name }}')"
+                                                title="删除">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5">
+                                    <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                                    <p class="text-muted mt-3">暂无图书数据</p>
+                                    <a href="{{ url_for('new_book') }}" class="btn btn-primary">
+                                        <i class="bi bi-plus-circle"></i> 添加第一本图书
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 分页组件 -->
+<div class="row mt-4">
+    <div class="col-12">
+        <nav id="paginationNav" style="display: none;">
+            <ul class="pagination justify-content-center" id="pagination">
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除图书 <strong id="deleteBookName"></strong> 吗？</p>
+                <p class="text-danger"><small>此操作不可恢复！</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">确认删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图书详情模态框 -->
+<div class="modal fade" id="bookDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="detailModalTitle">
+                    <i class="bi bi-book"></i> 图书详情
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="bookDetailContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <a href="#" class="btn btn-primary" id="detailViewFullBtn" style="display: none;">
+                    <i class="bi bi-arrow-right-circle"></i> 查看完整详情
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导入CSV模态框 -->
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-upload"></i> 导入CSV文件</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="csvFile" class="form-label">选择CSV文件</label>
+                    <input type="file" class="form-control" id="csvFile" accept=".csv">
+                    <small class="text-muted">CSV文件格式：图书ID,图书名称,ISBN,作者,出版社,价格,借阅次数</small>
+                </div>
+                <div id="importPreview" style="display: none;">
+                    <h6>预览数据（前5行）：</h6>
+                    <div class="table-responsive" style="max-height: 300px;">
+                        <table class="table table-sm table-bordered" id="previewTable">
+                            <thead class="table-light">
+                                <tr></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="importResult" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success" id="importBtn" onclick="importCSV()" disabled>
+                    <i class="bi bi-upload"></i> 开始导入
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据可视化图表 -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> 价格分布</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> 出版社分布</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="publisherChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+{% endblock %}

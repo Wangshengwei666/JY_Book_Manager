@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.book_name }} - 图书详情{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- 面包屑导航 -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">首页</a></li>
+                <li class="breadcrumb-item active" aria-current="page">图书详情</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <!-- 左侧：图书详细信息 -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="bi bi-book"></i> {{ book.book_name }}</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <label class="detail-label"><i class="bi bi-tag"></i> 图书ID</label>
+                                    <div class="detail-value">
+                                        <span class="badge bg-primary">{{ book.book_id }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <label class="detail-label"><i class="bi bi-upc"></i> ISBN</label>
+                                    <div class="detail-value">{{ book.book_isbn }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <label class="detail-label"><i class="bi bi-person"></i> 作者</label>
+                                    <div class="detail-value">{{ book.book_author }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <label class="detail-label"><i class="bi bi-building"></i> 出版社</label>
+                                    <div class="detail-value">{{ book.book_publisher }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <label class="detail-label"><i class="bi bi-currency-dollar"></i> 价格</label>
+                                    <div class="detail-value">
+                                        <span class="h5 text-primary mb-0">¥{{ "%.2f"|format(book.book_price) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <label class="detail-label"><i class="bi bi-eye"></i> 借阅次数</label>
+                                    <div class="detail-value">
+                                        <span class="h5 text-info mb-0">{{ book.interview_times }}</span>
+                                        <small class="text-muted">次</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('edit_book', book_id=book.book_id) }}" class="btn btn-primary">
+                                <i class="bi bi-pencil"></i> 编辑图书
+                            </a>
+                            <button type="button" class="btn btn-danger" onclick="deleteBook('{{ book.book_id }}', '{{ book.book_name }}')">
+                                <i class="bi bi-trash"></i> 删除图书
+                            </button>
+                            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> 返回列表
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：相关图书 -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-stars"></i> 相关图书</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if related_books %}
+                            {% for related_book in related_books %}
+                            <div class="related-book-item mb-3 pb-3 border-bottom">
+                                <h6 class="mb-1">
+                                    <a href="{{ url_for('book_detail', book_id=related_book.book_id) }}" class="text-decoration-none">
+                                        {{ related_book.book_name }}
+                                    </a>
+                                </h6>
+                                <div class="small text-muted">
+                                    <div><i class="bi bi-person"></i> {{ related_book.book_author }}</div>
+                                    <div><i class="bi bi-building"></i> {{ related_book.book_publisher }}</div>
+                                    <div class="mt-1">
+                                        <span class="text-primary">¥{{ "%.2f"|format(related_book.book_price) }}</span>
+                                        <span class="ms-2"><i class="bi bi-eye"></i> {{ related_book.interview_times }}次</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted text-center">暂无相关图书</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除图书 <strong id="deleteBookName"></strong> 吗？</p>
+                <p class="text-danger"><small>此操作不可恢复！</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">确认删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.detail-item {
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.detail-item:hover {
+    background-color: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.detail-label {
+    display: block;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.detail-value {
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.related-book-item:last-child {
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+body.dark-theme .detail-item {
+    background-color: #3a3a4e;
+}
+
+body.dark-theme .detail-item:hover {
+    background-color: #4a4a5e;
+}
+
+body.dark-theme .detail-label {
+    color: #aaa;
+}
+
+body.dark-theme .detail-value {
+    color: #e0e0e0;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let deleteBookId = null;
+
+function deleteBook(bookId, bookName) {
+    deleteBookId = bookId;
+    document.getElementById('deleteBookName').textContent = bookName;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+    if (deleteBookId) {
+        $.ajax({
+            url: '/api/books/' + deleteBookId,
+            type: 'DELETE',
+            success: function(response) {
+                if (response.success) {
+                    showToast(response.message, 'success');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                } else {
+                    showToast('删除失败: ' + response.message, 'error');
+                }
+            },
+            error: function(xhr) {
+                const response = xhr.responseJSON || {};
+                showToast('删除失败: ' + (response.message || '服务器错误'), 'error');
+            }
+        });
+    }
+    bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+});
+</script>
+{% endblock %}
+
