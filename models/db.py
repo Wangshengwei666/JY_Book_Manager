@@ -202,6 +202,22 @@ class BookDB:
         """分页获取图书"""
         conn = None
         try:
+            # 确保 page 和 per_page 是整数类型
+            try:
+                page = int(page)
+            except (ValueError, TypeError):
+                page = 1
+            try:
+                per_page = int(per_page)
+            except (ValueError, TypeError):
+                per_page = 10
+            
+            # 确保 page 和 per_page 是正数
+            if page < 1:
+                page = 1
+            if per_page < 1:
+                per_page = 10
+            
             conn = self._get_connection()
             cursor = conn.cursor(as_dict=True)
             
@@ -224,8 +240,8 @@ class BookDB:
                 sort_by = 'book_id'
             sort_order = 'ASC' if sort_order.upper() == 'ASC' else 'DESC'
             
-            # 计算偏移量
-            offset = (page - 1) * per_page
+            # 计算偏移量（确保是整数）
+            offset = int((page - 1) * per_page)
             
             # 执行查询
             query = f"""
@@ -243,7 +259,8 @@ class BookDB:
                 OFFSET %s ROWS
                 FETCH NEXT %s ROWS ONLY
             """
-            params.extend([offset, per_page])
+            # 确保 offset 和 per_page 是整数类型
+            params.extend([int(offset), int(per_page)])
             
             cursor.execute(query, params)
             books = cursor.fetchall()
@@ -382,6 +399,22 @@ class BookDB:
         """高级筛选查询"""
         conn = None
         try:
+            # 确保 page 和 per_page 是整数类型
+            try:
+                page = int(page)
+            except (ValueError, TypeError):
+                page = 1
+            try:
+                per_page = int(per_page)
+            except (ValueError, TypeError):
+                per_page = 10
+            
+            # 确保 page 和 per_page 是正数
+            if page < 1:
+                page = 1
+            if per_page < 1:
+                per_page = 10
+            
             conn = self._get_connection()
             cursor = conn.cursor(as_dict=True)
             
@@ -405,23 +438,33 @@ class BookDB:
                 where_conditions.append("interview_times <= %s")
                 params.append(int(filters['borrow_max']))
             
-            # 出版社筛选
-            if filters.get('publishers') and len(filters['publishers']) > 0:
-                placeholders = ','.join(['%s'] * len(filters['publishers']))
-                where_conditions.append(f"book_publisher IN ({placeholders})")
-                params.extend(filters['publishers'])
+            # 出版社筛选（关键词搜索）
+            publisher = filters.get('publisher')
+            if publisher:
+                publisher = str(publisher).strip()
+                if publisher:
+                    # 转义 LIKE 查询中的特殊字符
+                    publisher = publisher.replace('[', '[[]').replace('%', '[%]').replace('_', '[_]')
+                    where_conditions.append("book_publisher LIKE %s")
+                    params.append(f'%{publisher}%')
             
-            # 作者筛选
-            if filters.get('authors') and len(filters['authors']) > 0:
-                placeholders = ','.join(['%s'] * len(filters['authors']))
-                where_conditions.append(f"book_author IN ({placeholders})")
-                params.extend(filters['authors'])
+            # 作者筛选（关键词搜索）
+            author = filters.get('author')
+            if author:
+                author = str(author).strip()
+                if author:
+                    # 转义 LIKE 查询中的特殊字符
+                    author = author.replace('[', '[[]').replace('%', '[%]').replace('_', '[_]')
+                    where_conditions.append("book_author LIKE %s")
+                    params.append(f'%{author}%')
             
             # 指定字段筛选
             if filters.get('field_search'):
                 field = filters.get('field_search', {}).get('field', '')
                 keyword = filters.get('field_search', {}).get('keyword', '').strip()
                 if field and keyword:
+                    # 转义 LIKE 查询中的特殊字符
+                    keyword = keyword.replace('[', '[[]').replace('%', '[%]').replace('_', '[_]')
                     if field == 'book_name':
                         where_conditions.append("book_name LIKE %s")
                         params.append(f'%{keyword}%')
@@ -446,15 +489,16 @@ class BookDB:
                 sort_by = 'book_id'
             sort_order = 'ASC' if sort_order.upper() == 'ASC' else 'DESC'
             
-            # 计算总数
+            # 计算总数（使用筛选参数的副本）
+            count_params = list(params)
             count_query = f"SELECT COUNT(*) as total FROM book {where_clause}"
-            cursor.execute(count_query, params)
+            cursor.execute(count_query, count_params)
             total = cursor.fetchone()['total']
             
-            # 计算偏移量
-            offset = (page - 1) * per_page
+            # 计算偏移量（确保是整数）
+            offset = int((page - 1) * per_page)
             
-            # 执行查询
+            # 执行查询（添加分页参数）
             query = f"""
                 SELECT 
                     book_id,
@@ -470,9 +514,11 @@ class BookDB:
                 OFFSET %s ROWS
                 FETCH NEXT %s ROWS ONLY
             """
-            params.extend([offset, per_page])
+            query_params = list(params)  # 使用筛选参数的副本
+            # 确保 offset 和 per_page 是整数类型
+            query_params.extend([int(offset), int(per_page)])
             
-            cursor.execute(query, params)
+            cursor.execute(query, query_params)
             books = cursor.fetchall()
             
             # 转换MONEY类型

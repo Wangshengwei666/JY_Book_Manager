@@ -15,8 +15,6 @@ $(document).ready(function() {
     // 加载图表
     loadCharts();
     
-    // 加载筛选选项
-    loadFilterOptions();
     
     // 搜索功能
     let searchTimeout;
@@ -545,39 +543,7 @@ function toggleAdvancedFilter() {
         panel.slideUp();
     } else {
         panel.slideDown();
-        loadFilterOptions();
     }
-}
-
-function loadFilterOptions() {
-    $.ajax({
-        url: '/api/filter/options',
-        type: 'GET',
-        success: function(response) {
-            if (response.success) {
-                const data = response.data;
-                
-                // 填充出版社选项
-                const publisherSelect = $('#filterPublisher');
-                publisherSelect.empty();
-                publisherSelect.append('<option value="">全部</option>');
-                data.publishers.forEach(publisher => {
-                    publisherSelect.append(`<option value="${publisher}">${publisher}</option>`);
-                });
-                
-                // 填充作者选项
-                const authorSelect = $('#filterAuthor');
-                authorSelect.empty();
-                authorSelect.append('<option value="">全部</option>');
-                data.authors.forEach(author => {
-                    authorSelect.append(`<option value="${author}">${author}</option>`);
-                });
-            }
-        },
-        error: function() {
-            showToast('加载筛选选项失败', 'error');
-        }
-    });
 }
 
 function applyAdvancedFilter() {
@@ -595,16 +561,16 @@ function applyAdvancedFilter() {
     if (borrowMin) filters.borrow_min = borrowMin;
     if (borrowMax) filters.borrow_max = borrowMax;
     
-    // 出版社
-    const publishers = $('#filterPublisher').val();
-    if (publishers && publishers.length > 0 && publishers[0] !== '') {
-        filters.publishers = Array.isArray(publishers) ? publishers : [publishers];
+    // 出版社（关键词搜索）
+    const publisher = $('#filterPublisher').val().trim();
+    if (publisher) {
+        filters.publisher = publisher;
     }
     
-    // 作者
-    const authors = $('#filterAuthor').val();
-    if (authors && authors.length > 0 && authors[0] !== '') {
-        filters.authors = Array.isArray(authors) ? authors : [authors];
+    // 作者（关键词搜索）
+    const author = $('#filterAuthor').val().trim();
+    if (author) {
+        filters.author = author;
     }
     
     // 指定字段筛选
@@ -653,8 +619,22 @@ function loadFilteredBooks(filters) {
                 showToast('筛选失败: ' + response.message, 'error');
             }
         },
-        error: function() {
-            showToast('筛选失败', 'error');
+        error: function(xhr, status, error) {
+            let errorMsg = '筛选失败';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMsg += ': ' + xhr.responseJSON.message;
+            } else if (xhr.responseText) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.message) {
+                        errorMsg += ': ' + response.message;
+                    }
+                } catch (e) {
+                    errorMsg += ': ' + error;
+                }
+            }
+            showToast(errorMsg, 'error');
+            console.error('筛选错误:', xhr, status, error);
         }
     });
 }
@@ -662,7 +642,8 @@ function loadFilteredBooks(filters) {
 function resetAdvancedFilter() {
     $('#filterPriceMin, #filterPriceMax').val('');
     $('#filterBorrowMin, #filterBorrowMax').val('');
-    $('#filterPublisher, #filterAuthor').val('');
+    $('#filterPublisher').val('');
+    $('#filterAuthor').val('');
     $('#filterField').val('');
     $('#filterKeyword').val('');
     currentFilters = {};

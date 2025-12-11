@@ -307,8 +307,15 @@ def api_filter_books():
     try:
         data = request.get_json()
         filters = data.get('filters', {})
-        page = data.get('page', 1)
-        per_page = data.get('per_page', 12)
+        # 确保 page 和 per_page 是整数类型
+        try:
+            page = int(data.get('page', 1))
+        except (ValueError, TypeError):
+            page = 1
+        try:
+            per_page = int(data.get('per_page', 12))
+        except (ValueError, TypeError):
+            per_page = 12
         sort_by = data.get('sort_by', 'book_id')
         sort_order = data.get('sort_order', 'ASC')
         
