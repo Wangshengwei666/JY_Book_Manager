@@ -8,6 +8,9 @@ let publisherChart = null;
 let isAdvancedFilterActive = false;
 let currentFilters = {};
 
+// 保存选中的图书ID（用于批量操作）
+let selectedBookIds = new Set();
+
 $(document).ready(function() {
     // 加载统计数据
     loadStatistics();
@@ -212,6 +215,20 @@ function renderBooks(books) {
     } else {
         renderTableView(books);
     }
+    
+    // 恢复之前选中的状态（使用全局变量）
+    selectedBookIds.forEach(id => {
+        const checkbox = $(`.book-checkbox[value="${id}"]`);
+        if (checkbox.length > 0) {
+            checkbox.prop('checked', true);
+        } else {
+            // 如果图书不在当前列表中，从选中集合中移除
+            selectedBookIds.delete(id);
+        }
+    });
+    
+    // 直接更新批量操作栏（基于全局变量，不依赖DOM）
+    updateBatchActions();
 }
 
 // 渲染卡片视图
@@ -242,7 +259,9 @@ function renderCardView(books) {
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div class="form-check mb-0">
                                 <input class="form-check-input book-checkbox" type="checkbox" 
-                                       value="${book.book_id}" onchange="updateBatchActions()"
+                                       value="${book.book_id}" 
+                                       ${selectedBookIds.has(book.book_id) ? 'checked' : ''}
+                                       onchange="handleCheckboxChange('${book.book_id}', this.checked)"
                                        id="checkbox-${book.book_id}">
                                 <label class="form-check-label" for="checkbox-${book.book_id}" style="cursor: pointer;">
                                     <span class="badge bg-primary">${book.book_id}</span>
@@ -315,7 +334,8 @@ function renderTableView(books) {
             <tr class="book-item" data-book-id="${book.book_id}">
                 <td>
                     <input type="checkbox" class="book-checkbox" value="${book.book_id}" 
-                           onchange="updateBatchActions()">
+                           ${selectedBookIds.has(book.book_id) ? 'checked' : ''}
+                           onchange="handleCheckboxChange('${book.book_id}', this.checked)">
                 </td>
                 <td>${book.book_id}</td>
                 <td>${book.book_name}</td>
@@ -422,6 +442,12 @@ function switchView(view) {
         $('#viewCard').removeClass('active');
         $('#viewTable').addClass('active');
     }
+    // 切换视图时重新渲染当前数据，确保数据同步
+    const currentBooks = $('#booksGrid .book-item').length > 0 || $('#booksTable tbody tr').length > 0;
+    if (currentBooks) {
+        // 如果有数据，重新加载以确保视图同步
+        loadBooks();
+    }
 }
 
 // 过滤图书
@@ -457,6 +483,11 @@ function deleteBookRequest(bookId) {
         success: function(response) {
             if (response.success) {
                 showToast(response.message, 'success');
+                // 重置批量操作状态
+                selectedBookIds.clear();
+                $('.book-checkbox').prop('checked', false);
+                updateBatchActions();
+                // 重新加载数据
                 loadBooks();
                 loadStatistics();
                 loadCharts();
@@ -471,10 +502,20 @@ function deleteBookRequest(bookId) {
     });
 }
 
+// 处理复选框变化
+function handleCheckboxChange(bookId, isChecked) {
+    if (isChecked) {
+        selectedBookIds.add(bookId);
+    } else {
+        selectedBookIds.delete(bookId);
+    }
+    updateBatchActions();
+}
+
 // 批量操作
 function updateBatchActions() {
-    const checked = $('.book-checkbox:checked');
-    const count = checked.length;
+    // 完全基于全局变量来更新批量操作栏，不依赖DOM状态
+    const count = selectedBookIds.size;
     
     if (count > 0) {
         $('#batchActions').show();
@@ -487,7 +528,15 @@ function updateBatchActions() {
 // 全选/取消全选
 function toggleSelectAll() {
     const checked = $('#selectAll').prop('checked');
-    $('.book-checkbox').prop('checked', checked);
+    $('.book-checkbox').each(function() {
+        const bookId = $(this).val();
+        $(this).prop('checked', checked);
+        if (checked) {
+            selectedBookIds.add(bookId);
+        } else {
+            selectedBookIds.delete(bookId);
+        }
+    });
     updateBatchActions();
 }
 
@@ -515,6 +564,9 @@ function batchDelete() {
         success: function(response) {
             if (response.success) {
                 showToast(response.message, 'success');
+                // 从选中集合中移除已删除的图书
+                bookIds.forEach(id => selectedBookIds.delete(id));
+                // 重新加载数据
                 loadBooks();
                 loadStatistics();
                 loadCharts();
@@ -732,15 +784,58 @@ function showImportModal() {
     $('#csvFile').val('');
     $('#importPreview').hide();
     $('#importResult').hide();
+    // 清理之前的提示信息
+    $('#fileSelectedInfo, #encodingWarning').remove();
     $('#importBtn').prop('disabled', true);
     modal.show();
 }
 
 function previewCSV(file) {
     const reader = new FileReader();
+    
     reader.onload = function(e) {
         const text = e.target.result;
-        const lines = text.split('\n').filter(line => line.trim());
+        
+        // 检查是否包含预期的列名（验证编码是否正确）
+        const hasValidHeaders = text.includes('图书ID') || 
+                               text.includes('book_id') || 
+                               text.includes('图书名称') || 
+                               text.includes('book_name');
+        
+        // 检查是否包含乱码字符（常见的乱码模式）
+        const hasGarbledChars = /[\uFFFD]/.test(text) || 
+                               (text.includes('ISBN') && !hasValidHeaders);
+        
+        if (hasValidHeaders) {
+            // 编码正确，正常显示预览
+            showPreview(text, false);
+            $('#importBtn').prop('disabled', false);
+        } else {
+            // 无法正确预览（可能是编码问题），隐藏预览，直接允许导入
+            $('#importPreview').hide();
+            // 移除之前的任何提示
+            $('#importPreview').prev('.alert').remove();
+            // 简单显示文件已选择（不提及编码问题）
+            if ($('#fileSelectedInfo').length === 0) {
+                $('#importPreview').before(
+                    '<div class="alert alert-success mb-3" id="fileSelectedInfo">' +
+                    '<i class="bi bi-check-circle"></i> 文件 <strong>' + file.name + '</strong> 已选择，可以开始导入。' +
+                    '</div>'
+                );
+            }
+            $('#importBtn').prop('disabled', false);
+        }
+    };
+    
+    reader.onerror = function() {
+        showToast('读取文件失败', 'error');
+    };
+    
+    // 尝试 UTF-8 读取（浏览器默认）
+    reader.readAsText(file, 'UTF-8');
+    
+    function showPreview(text, hasWarning = false) {
+        const lines = text.split(/\r?\n/).filter(line => line.trim());
         
         if (lines.length < 2) {
             showToast('CSV文件格式错误', 'error');
@@ -748,7 +843,14 @@ function previewCSV(file) {
         }
         
         // 解析CSV（简单处理，假设是逗号分隔）
-        const headers = lines[0].split(',').map(h => h.trim());
+        const headers = lines[0].split(',').map(h => {
+            let header = h.trim();
+            // 移除首尾引号
+            if (header.startsWith('"') && header.endsWith('"')) {
+                header = header.slice(1, -1);
+            }
+            return header;
+        });
         const previewRows = lines.slice(1, Math.min(6, lines.length));
         
         // 显示预览表格
@@ -763,7 +865,15 @@ function previewCSV(file) {
         });
         
         previewRows.forEach(line => {
-            const cells = line.split(',').map(c => c.trim());
+            // 处理可能包含引号的CSV单元格
+            const cells = line.split(',').map(c => {
+                let cell = c.trim();
+                // 移除首尾引号
+                if (cell.startsWith('"') && cell.endsWith('"')) {
+                    cell = cell.slice(1, -1);
+                }
+                return cell;
+            });
             const row = $('<tr></tr>');
             cells.forEach(cell => {
                 row.append(`<td>${cell}</td>`);
@@ -772,9 +882,7 @@ function previewCSV(file) {
         });
         
         $('#importPreview').show();
-        $('#importBtn').prop('disabled', false);
-    };
-    reader.readAsText(file, 'UTF-8');
+    }
 }
 
 function importCSV() {

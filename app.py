@@ -61,11 +61,17 @@ def api_create_book():
         data = request.get_json()
         
         # 验证必填字段
-        required_fields = ['book_id', 'book_name', 'book_isbn', 'book_author', 
-                          'book_publisher', 'book_price', 'interview_times']
-        for field in required_fields:
-            if field not in data or not data[field]:
-                return jsonify({'success': False, 'message': f'字段 {field} 不能为空'}), 400
+        # 字符串类型字段
+        string_fields = ['book_id', 'book_name', 'book_isbn', 'book_author', 'book_publisher']
+        for field in string_fields:
+            if field not in data or not data[field] or (isinstance(data[field], str) and not data[field].strip()):
+                return jsonify({'success': False, 'message': f'{field} 不能为空'}), 400
+        
+        # 数字类型字段（0 是有效值）
+        numeric_fields = ['book_price', 'interview_times']
+        for field in numeric_fields:
+            if field not in data or data[field] is None:
+                return jsonify({'success': False, 'message': f'{field} 不能为空'}), 400
         
         # 验证数据类型
         try:
@@ -95,11 +101,17 @@ def api_update_book(book_id):
         data = request.get_json()
         
         # 验证必填字段
-        required_fields = ['book_name', 'book_isbn', 'book_author', 
-                          'book_publisher', 'book_price', 'interview_times']
-        for field in required_fields:
-            if field not in data or not data[field]:
-                return jsonify({'success': False, 'message': f'字段 {field} 不能为空'}), 400
+        # 字符串类型字段
+        string_fields = ['book_name', 'book_isbn', 'book_author', 'book_publisher']
+        for field in string_fields:
+            if field not in data or not data[field] or (isinstance(data[field], str) and not data[field].strip()):
+                return jsonify({'success': False, 'message': f'{field} 不能为空'}), 400
+        
+        # 数字类型字段（0 是有效值）
+        numeric_fields = ['book_price', 'interview_times']
+        for field in numeric_fields:
+            if field not in data or data[field] is None:
+                return jsonify({'success': False, 'message': f'{field} 不能为空'}), 400
         
         # 验证数据类型
         try:
@@ -355,35 +367,87 @@ def api_import_csv():
         if not file.filename.endswith('.csv'):
             return jsonify({'success': False, 'message': '只支持CSV文件'}), 400
         
-        # 读取CSV文件
-        stream = io.TextIOWrapper(file.stream, encoding='utf-8-sig')
-        reader = csv.DictReader(stream)
+        # 读取文件内容（二进制）
+        file.stream.seek(0)
+        file_content = file.stream.read()
+        
+        # 尝试多种编码方式读取CSV文件
+        encodings = ['utf-8-sig', 'utf-8', 'gbk', 'gb2312', 'gb18030']
+        reader = None
+        used_encoding = None
+        
+        for encoding in encodings:
+            try:
+                # 使用BytesIO重新创建流，避免文件流被消耗
+                stream = io.TextIOWrapper(io.BytesIO(file_content), encoding=encoding)
+                test_reader = csv.DictReader(stream)
+                
+                # 尝试读取表头来验证编码是否正确
+                try:
+                    headers = test_reader.fieldnames
+                    if headers:
+                        # 验证是否能正确读取中文列名或英文列名
+                        header_str = ','.join(headers)
+                        if '图书ID' in header_str or 'book_id' in header_str:
+                            # 编码正确，重新创建reader（从头开始）
+                            stream.close()
+                            stream = io.TextIOWrapper(io.BytesIO(file_content), encoding=encoding)
+                            reader = csv.DictReader(stream)
+                            used_encoding = encoding
+                            break
+                except Exception:
+                    pass
+                
+                stream.close()
+            except (UnicodeDecodeError, UnicodeError):
+                try:
+                    stream.close()
+                except:
+                    pass
+                continue
+            except Exception as e:
+                try:
+                    stream.close()
+                except:
+                    pass
+                continue
+        
+        if reader is None:
+            return jsonify({'success': False, 'message': '无法识别CSV文件编码，请确保文件为UTF-8或GBK编码'}), 400
         
         books_data = []
         errors = []
         
-        # 解析CSV数据
-        for idx, row in enumerate(reader, 2):  # 从第2行开始（第1行是表头）
+        try:
+            # 解析CSV数据
+            for idx, row in enumerate(reader, 2):  # 从第2行开始（第1行是表头）
+                try:
+                    # 映射CSV列名到数据库字段
+                    book_data = {
+                        'book_id': row.get('图书ID', row.get('book_id', '')).strip(),
+                        'book_name': row.get('图书名称', row.get('book_name', '')).strip(),
+                        'book_isbn': row.get('ISBN', row.get('book_isbn', '')).strip(),
+                        'book_author': row.get('作者', row.get('book_author', '')).strip(),
+                        'book_publisher': row.get('出版社', row.get('book_publisher', '')).strip(),
+                        'book_price': float(row.get('价格', row.get('book_price', 0))),
+                        'interview_times': int(row.get('借阅次数', row.get('interview_times', 0)))
+                    }
+                    
+                    # 验证必填字段
+                    if not book_data['book_id'] or not book_data['book_name']:
+                        errors.append(f"第{idx}行: 图书ID或图书名称为空")
+                        continue
+                    
+                    books_data.append(book_data)
+                except (ValueError, KeyError) as e:
+                    errors.append(f"第{idx}行: 数据格式错误 - {str(e)}")
+        finally:
+            # 确保流被关闭
             try:
-                # 映射CSV列名到数据库字段
-                book_data = {
-                    'book_id': row.get('图书ID', row.get('book_id', '')).strip(),
-                    'book_name': row.get('图书名称', row.get('book_name', '')).strip(),
-                    'book_isbn': row.get('ISBN', row.get('book_isbn', '')).strip(),
-                    'book_author': row.get('作者', row.get('book_author', '')).strip(),
-                    'book_publisher': row.get('出版社', row.get('book_publisher', '')).strip(),
-                    'book_price': float(row.get('价格', row.get('book_price', 0))),
-                    'interview_times': int(row.get('借阅次数', row.get('interview_times', 0)))
-                }
-                
-                # 验证必填字段
-                if not book_data['book_id'] or not book_data['book_name']:
-                    errors.append(f"第{idx}行: 图书ID或图书名称为空")
-                    continue
-                
-                books_data.append(book_data)
-            except (ValueError, KeyError) as e:
-                errors.append(f"第{idx}行: 数据格式错误 - {str(e)}")
+                if reader and hasattr(reader, 'close'):
+                    reader.close()
+            except:
+                pass
         
         if not books_data:
             return jsonify({

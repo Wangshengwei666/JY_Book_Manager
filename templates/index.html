@@ -235,7 +235,8 @@
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div class="form-check mb-0">
                                 <input class="form-check-input book-checkbox" type="checkbox" 
-                                       value="{{ book.book_id }}" onchange="updateBatchActions()"
+                                       value="{{ book.book_id }}" 
+                                       onchange="handleCheckboxChange('{{ book.book_id }}', this.checked)"
                                        id="checkbox-{{ book.book_id }}">
                                 <label class="form-check-label" for="checkbox-{{ book.book_id }}" style="cursor: pointer;">
                                     <span class="badge bg-primary">{{ book.book_id }}</span>
@@ -320,7 +321,7 @@
                             <tr class="book-item" data-book-id="{{ book.book_id }}">
                                 <td>
                                     <input type="checkbox" class="book-checkbox" value="{{ book.book_id }}" 
-                                           onchange="updateBatchActions()">
+                                           onchange="handleCheckboxChange('{{ book.book_id }}', this.checked)">
                                 </td>
                                 <td>{{ book.book_id }}</td>
                                 <td>{{ book.book_name }}</td>
