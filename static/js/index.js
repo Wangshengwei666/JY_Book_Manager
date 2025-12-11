@@ -217,14 +217,20 @@ function renderBooks(books) {
     }
     
     // 恢复之前选中的状态（使用全局变量）
+    // 注意：不要删除不在当前列表中的选中项，因为可能是分页或筛选导致的
+    // 只在用户明确取消选择时才删除
     selectedBookIds.forEach(id => {
-        const checkbox = $(`.book-checkbox[value="${id}"]`);
+        const cleanedId = String(id).trim();
+        // 尝试精确匹配
+        let checkbox = $(`.book-checkbox[value="${cleanedId}"]`);
+        // 如果找不到，尝试带空格的匹配（兼容旧数据）
+        if (checkbox.length === 0) {
+            checkbox = $(`.book-checkbox[value="${cleanedId} "]`);
+        }
         if (checkbox.length > 0) {
             checkbox.prop('checked', true);
-        } else {
-            // 如果图书不在当前列表中，从选中集合中移除
-            selectedBookIds.delete(id);
         }
+        // 不再自动删除不在当前列表中的项，保持选中状态
     });
     
     // 直接更新批量操作栏（基于全局变量，不依赖DOM）
@@ -442,12 +448,9 @@ function switchView(view) {
         $('#viewCard').removeClass('active');
         $('#viewTable').addClass('active');
     }
-    // 切换视图时重新渲染当前数据，确保数据同步
-    const currentBooks = $('#booksGrid .book-item').length > 0 || $('#booksTable tbody tr').length > 0;
-    if (currentBooks) {
-        // 如果有数据，重新加载以确保视图同步
-        loadBooks();
-    }
+    // 切换视图时，不需要重新加载数据，只需要切换显示方式
+    // 这样可以保持选中状态
+    updateBatchActions();
 }
 
 // 过滤图书
@@ -504,6 +507,9 @@ function deleteBookRequest(bookId) {
 
 // 处理复选框变化
 function handleCheckboxChange(bookId, isChecked) {
+    // 确保ID没有空格
+    bookId = String(bookId).trim();
+    
     if (isChecked) {
         selectedBookIds.add(bookId);
     } else {
@@ -515,6 +521,31 @@ function handleCheckboxChange(bookId, isChecked) {
 // 批量操作
 function updateBatchActions() {
     // 完全基于全局变量来更新批量操作栏，不依赖DOM状态
+    // 清理ID中的空格（防止之前添加的带空格的ID）
+    // 但不要清空重建，而是逐步清理，避免竞态条件
+    const idsToRemove = [];
+    const cleanedIds = new Set();
+    
+    selectedBookIds.forEach(id => {
+        const cleanedId = String(id).trim();
+        if (cleanedId && cleanedId !== id) {
+            // 如果ID有空格，需要替换
+            idsToRemove.push(id);
+            cleanedIds.add(cleanedId);
+        } else if (cleanedId) {
+            // ID已经是干净的，保留
+            cleanedIds.add(cleanedId);
+        }
+    });
+    
+    // 移除带空格的ID，添加清理后的ID
+    idsToRemove.forEach(id => selectedBookIds.delete(id));
+    cleanedIds.forEach(id => {
+        if (!selectedBookIds.has(id)) {
+            selectedBookIds.add(id);
+        }
+    });
+    
     const count = selectedBookIds.size;
     
     if (count > 0) {
@@ -529,7 +560,7 @@ function updateBatchActions() {
 function toggleSelectAll() {
     const checked = $('#selectAll').prop('checked');
     $('.book-checkbox').each(function() {
-        const bookId = $(this).val();
+        const bookId = String($(this).val()).trim();
         $(this).prop('checked', checked);
         if (checked) {
             selectedBookIds.add(bookId);
@@ -544,7 +575,7 @@ function toggleSelectAll() {
 function batchDelete() {
     const checked = $('.book-checkbox:checked');
     const bookIds = checked.map(function() {
-        return $(this).val();
+        return String($(this).val()).trim();
     }).get();
     
     if (bookIds.length === 0) {

@@ -1,9 +1,9 @@
 // JY图书管理系统 - 主JavaScript文件
 
 $(document).ready(function() {
-    // 自动隐藏Flash消息
+    // 自动隐藏Flash消息（只隐藏Flash消息，不隐藏批量操作栏）
     setTimeout(function() {
-        $('.alert').fadeOut('slow', function() {
+        $('#flash-messages .alert').fadeOut('slow', function() {
             $(this).remove();
         });
     }, 5000);
